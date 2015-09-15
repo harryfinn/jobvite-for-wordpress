@@ -11,6 +11,7 @@ class JobviteUninstall extends JobviteSetup {
 
     delete_option($this->prefix . 'version');
     delete_option($this->prefix . 'api_keys');
+    delete_option($this->prefix . 'template_options');
   }
 }
 
