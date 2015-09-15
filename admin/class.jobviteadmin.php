@@ -11,6 +11,9 @@ class JobviteAdmin extends JobviteSetup {
     add_filter(
       'template_include', [$this, $this->prefix . 'add_job_template'], 1, 1
     );
+    add_action('update_option_' . $this->prefix . 'rewrite_options', [
+      $this, $this->prefix . 'rewrite_options_updated_callback'
+    ], 10, 2);
   }
 
   public function jfw_add_admin_page() {
@@ -38,6 +41,13 @@ class JobviteAdmin extends JobviteSetup {
       $this->slug
     );
 
+    add_settings_section(
+      $this->prefix . 'rewrite_settings',
+      'Rewrite Settings',
+      [$this, $this->prefix . 'rewrite_settings_callback'],
+      $this->slug
+    );
+
     register_setting(
       $this->prefix . 'api_settings',
       $this->prefix . 'api_keys'
@@ -47,11 +57,24 @@ class JobviteAdmin extends JobviteSetup {
       $this->prefix . 'template_settings',
       $this->prefix . 'template_options'
     );
+
+    register_setting(
+      $this->prefix . 'rewrite_settings',
+      $this->prefix . 'rewrite_options',
+      [$this, $this->prefix . 'rewrite_sanitize_callback']
+    );
   }
 
   public function jfw_add_custom_rewrites() {
+    $rewrite_options = get_option($this->prefix . 'rewrite_options');
+    $current_rewrite_url = trailingslashit(
+      !empty($rewrite_options['url']) ?
+        $rewrite_options['url'] :
+        'jobs'
+    );
+
     add_rewrite_rule(
-      'jobs/([0-9]+)/?',
+      $current_rewrite_url . '([0-9]+)/?',
       'index.php?jobvite_id=$matches[1]',
       'top'
     );
@@ -116,6 +139,7 @@ class JobviteAdmin extends JobviteSetup {
                       '>' . $name . ' (' . $file . ')</option>';
       }
     ?>
+
     <p>Use the select field below to choose a theme template you'd like to use to display each (individual) job post on. This allows for your own template markup and styling to be used.</p>
 
     <p>Otherwise, you can use a simple template included with this plugin to display your job posts which will just include the header and footer templates.</p>
@@ -130,6 +154,45 @@ class JobviteAdmin extends JobviteSetup {
     }
   }
 
+  public function jfw_rewrite_settings_callback() {
+    settings_fields($this->prefix . 'rewrite_settings');
+    $rewrite_options = get_option($this->prefix . 'rewrite_options');
+    $current_rewrite_url = !empty($rewrite_options['url']) ?
+      $rewrite_options['url'] :
+      'jobs';
+
+    $example_url = trailingslashit(get_bloginfo('url')) .
+                   trailingslashit($current_rewrite_url) . '123'
+
+    ?>
+
+    <p>Currently jobvite posts can be viewed by their ID by going to:
+      <code><?php echo $example_url; ?></code>
+      <em>(Note: 123 is an example ID)</em>
+      - You can amend this url below.
+    </p>
+
+    <label for="<?php echo $this->prefix; ?>rewrite_options[url]">Amend the url to: </label>
+    <input name="<?php echo $this->prefix; ?>rewrite_options[url]" type="text" value="<?php echo $current_rewrite_url; ?>" />
+    <em>(Note: you do not need to add a trailing slash)</em>
+
+    <?php
+  }
+
+  public function jfw_rewrite_sanitize_callback($input) {
+    array_walk($input, function(&$val, $key) {
+      $val = $key == 'url' ? rtrim($val, '/') : $val;
+    });
+
+    return $input;
+  }
+
+  public function jfw_rewrite_options_updated_callback($old_val, $new_val) {
+    if($new_val !== $old_val) {
+      flush_rewrite_rules();
+    }
+  }
+
   public function jfw_render_settings_page() {
     $updated_settings = $_REQUEST['settings-updated'];
     $updated_settings = !empty(updated_settings) ? $updated_settings : false;
@@ -138,14 +201,15 @@ class JobviteAdmin extends JobviteSetup {
     <div class="wrap">
       <h2><?php echo esc_html(get_admin_page_title()); ?></h2>
       <form method="post" action="options.php">
+
         <?php
         do_settings_sections($this->slug);
         submit_button();
         ?>
+
       </form>
     </div>
 
     <?php
   }
 }
-
