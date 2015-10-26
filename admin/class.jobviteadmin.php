@@ -64,6 +64,11 @@ class JobviteAdmin extends JobviteSetup {
 
     register_setting(
       $this->prefix . 'jobvite_feed_settings',
+      $this->prefix . 'job_feed_departments'
+    );
+
+    register_setting(
+      $this->prefix . 'jobvite_feed_settings',
       $this->prefix . 'api_timeout'
     );
   }
@@ -301,7 +306,7 @@ class JobviteAdmin extends JobviteSetup {
         $api_options['company_id']
       );
 
-      $job_feed = $jobvite_feed->get_results();
+      $job_feed = $jobvite_feed->get_jobs();
 
       if(!empty($job_feed)) {
         update_option(
@@ -311,7 +316,12 @@ class JobviteAdmin extends JobviteSetup {
 
         update_option(
           $this->prefix . 'job_feed',
-          $jobvite_feed->get_results()
+          $job_feed
+        );
+
+        update_option(
+          $this->prefix . 'job_feed_departments',
+          $jobvite_feed->get_departments($job_feed)
         );
 
         $GLOBALS['jfw_notification_success'] = true;
