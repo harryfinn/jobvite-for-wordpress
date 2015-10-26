@@ -42,11 +42,15 @@ class JobviteSetup {
   }
 
   public function jfw_autoload_classes($name) {
-    $class_path = plugin_dir_path(__FILE__) . 'admin/class.' . strtolower($name) . '.php';
+    $admin_path = plugin_dir_path(__FILE__) . 'admin/class.' . strtolower($name) . '.php';
 
-    if(file_exists($class_path)) {
-      require_once $class_path;
-    }
+    if(file_exists($admin_path))
+      require_once $admin_path;
+
+    $frontend_path = plugin_dir_path(__FILE__) . 'frontend/class.' . strtolower($name) . '.php';
+
+    if(file_exists($frontend_path))
+      require_once $frontend_path;
   }
 
   public function init() {
