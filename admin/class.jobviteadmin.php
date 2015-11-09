@@ -135,6 +135,9 @@ class JobviteAdmin extends JobviteSetup {
 
   public function jfw_api_settings_callback() {
     $api_options = get_option($this->prefix . 'api_keys');
+    $api_type = !empty($api_options['api_type']) ?
+      $api_options['api_type'] :
+      'staging';
     ?>
 
     <label for="<?php echo $this->prefix; ?>api_keys[api]">API Key</label>
@@ -145,6 +148,17 @@ class JobviteAdmin extends JobviteSetup {
     <br>
     <label for="<?php echo $this->prefix; ?>api_keys[company_id]">Company ID</label>
     <input name="<?php echo $this->prefix; ?>api_keys[company_id]" type="text" value="<?php echo $api_options['company_id']; ?>" />
+    <br>
+    <label>Live API:
+      <input type="radio" name="<?php echo $this->prefix; ?>api_keys[api_type]" value="live" <?php checked($api_type, 'live'); ?> />
+    </label>
+    <label>Test API:
+      <input type="radio" name="<?php echo $this->prefix; ?>api_keys[api_type]" value="staging" <?php checked($api_type, 'staging'); ?> />
+    </label>
+
+    <p>
+      <strong>Please note:</strong> This plugin prevents the live Jobvite API from being called more than once per hour to prevent user accounts from becoming rate limited (blocked for excessive requests). It is <em>strongly recommended that during testing, the Test API option is set above which will allow for as many request to the Jobvite staging (test) API as needed.</em><br>This does require a valid staging api to be setup for your Jobvite account, so if you receive an error regarding the API, it may well be that this API is not current setup for your Account. If this is the case, please contact your Jobvite representative and request that this is setup.
+    </p>
 
     <?php
   }
@@ -302,10 +316,14 @@ class JobviteAdmin extends JobviteSetup {
     $jobvite_feed = get_option($this->prefix . 'job_feed');
     $now = new DateTime;
     $timeout_datetime = $this->jfw_get_api_timeout($now);
+    $api_options = get_option($this->prefix . 'api_keys');
 
-    if(empty($jobvite_feed) || ($now > $timeout_datetime->modify('+1 hour'))) {
-      $api_options = get_option($this->prefix . 'api_keys');
+    if($api_options['api_type'] == 'staging' ||
+      empty($jobvite_feed) ||
+      ($now > $timeout_datetime->modify('+1 hour'))) {
+
       $jobvite_feed = new JobviteAPI(
+        $api_options['api_type'],
         $api_options['api'],
         $api_options['secret'],
         $api_options['company_id']
@@ -314,10 +332,12 @@ class JobviteAdmin extends JobviteSetup {
       $job_feed = $jobvite_feed->get_jobs();
 
       if(!empty($job_feed)) {
-        update_option(
-          $this->prefix . 'api_timeout',
-          $now->format('Y-m-d H:i:s')
-        );
+        if($api_options['api_type'] !== 'staging') {
+          update_option(
+            $this->prefix . 'api_timeout',
+            $now->format('Y-m-d H:i:s')
+          );
+        }
 
         update_option(
           $this->prefix . 'job_feed',
