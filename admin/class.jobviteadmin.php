@@ -3,6 +3,9 @@ class JobviteAdmin extends JobviteSetup {
   public function __construct() {
     parent::__construct();
 
+    add_action(
+      'admin_init', [$this, $this->prefix . 'trigger_feed_update'], 1
+    );
     add_action('admin_menu', [$this, $this->prefix . 'add_admin_page']);
     add_action('admin_init', [$this, $this->prefix . 'add_custom_settings']);
     add_action('admin_init', [$this, $this->prefix . 'add_custom_rewrites']);
@@ -127,17 +130,7 @@ class JobviteAdmin extends JobviteSetup {
 
   public function jfw_jobvite_feed_callback() {
     settings_fields($this->prefix . 'jobvite_feed_settings');
-    $this->jfw_admin_notice_error();
-    $this->jfw_admin_notice_success();
-
-    unset($GLOBALS['jfw_notification_error']);
-    unset($GLOBALS['jfw_notification_success']);
-
     settings_fields($this->prefix . 'jobvite_feed_settings');
-
-    if(!empty($_REQUEST['cache-jobvite-feed'])) {
-      $this->jfw_cache_jobvite_feed();
-    }
   }
 
   public function jfw_api_settings_callback() {
@@ -250,6 +243,16 @@ class JobviteAdmin extends JobviteSetup {
     ?>
 
     <div class="wrap">
+
+      <?php
+      $message_type = $_GET['message-type'];
+
+      if(!empty($message_type)) {
+        $message_method = $this->prefix . 'admin_notice_' . $message_type;
+        $this->$message_method();
+      }
+      ?>
+
       <h2><?php echo esc_html(get_admin_page_title()); ?></h2>
       <form method="post" action="options.php">
 
@@ -283,8 +286,10 @@ class JobviteAdmin extends JobviteSetup {
     $api_timeout = $this->jfw_get_api_timeout($now);
     $api_timeout->modify('+1 hour');
     $time_diff = $api_timeout->diff($now);
+    $formatted_diff = (int) $time_diff->format('%r%i');
+    $time_remaining = $formatted_diff > 0 ? 0 : $formatted_diff;
 
-    return $time_diff->i . ' mins';
+    return $time_remaining . ' mins';
   }
 
   private function jfw_get_api_timeout($now) {
@@ -324,30 +329,53 @@ class JobviteAdmin extends JobviteSetup {
           $jobvite_feed->get_departments($job_feed)
         );
 
-        $GLOBALS['jfw_notification_success'] = true;
+        $this->jfw_redirect_with('success');
       } else {
-        $GLOBALS['jfw_notification_error'] = true;
+        $this->jfw_redirect_with('error');
       }
     }
+
+    $this->jfw_redirect_with('warning');
+  }
+
+  private function jfw_admin_notice_warning() {
+    ?>
+
+    <div class="settings-error notice notice-warning">
+      <p><strong>Warning:</strong> An hour has not yet elapsed since the Jobvite feed was last updated. Please waited until the hour has passed in order to manually refresh the feed.</p>
+    </div>
+
+    <?php
   }
 
   private function jfw_admin_notice_error() {
-    if(!empty($GLOBALS['jfw_notification_error'])) {
     ?>
 
-      <div class="error">Error: An hour has not yet elapsed since the Jobvite feed was last updated. Please waited until the hour has passed in order to manually refresh the feed.</div>
+    <div class="settings-error notice notice-error">
+      <p><strong>Error:</strong> There was an issue whilst contacting the Jobvite API and saving your Jobvite data. Please try again.</p>
+    </div>
 
     <?php
-    }
   }
 
   private function jfw_admin_notice_success() {
-    if(!empty($GLOBALS['jfw_notification_success'])) {
     ?>
 
-      <div class="updated">Success: Jobvite feed has been updated successfully.</div>
+    <div class="settings-error notice notice-success">
+      <p><strong>Success:</strong> Jobvite feed has been updated successfully.</p>
+    </div>
 
     <?php
+  }
+
+  private function jfw_redirect_with($type) {
+    wp_redirect(admin_url('/options-general.php?page=' . $this->slug . '&message-type=' . $type));
+    exit();
+  }
+
+  public function jfw_trigger_feed_update() {
+    if(!empty($_REQUEST['cache-jobvite-feed'])) {
+      $this->jfw_cache_jobvite_feed();
     }
   }
 }
