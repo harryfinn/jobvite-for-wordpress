@@ -1,13 +1,15 @@
 <?php
 
 class JobviteAPI {
-  public $api_url,
+  public $live_api = 'https://api.jobvite.com/v1/jobFeed';
+  public $staging_api = 'https://api-stg.jobvite.com/v1/jobFeed';
+  public $api_type,
          $api_key,
          $api_secret,
          $api_companyId;
 
-  public function __construct($api_key, $api_secret, $api_companyId) {
-    $this->api_url = 'https://api.jobvite.com/v1/jobFeed';
+  public function __construct($api_type, $api_key, $api_secret, $api_companyId) {
+    $this->api_url = $this->{$api_type . '_api'};
     $this->api_key = $api_key;
     $this->api_secret = $api_secret;
     $this->api_companyId = $api_companyId;
@@ -43,6 +45,8 @@ class JobviteAPI {
   }
 
   private function map_feed_fields($feed) {
+    if(empty($feed)) return;
+
     $fields_to_map = [
       'title' => 'title',
       'id' => 'id',
