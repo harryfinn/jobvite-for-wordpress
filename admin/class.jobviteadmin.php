@@ -312,11 +312,12 @@ class JobviteAdmin extends JobviteSetup {
     return !empty($api_timeout) ? new DateTime($api_timeout) : $now;
   }
 
-  private function jfw_cache_jobvite_feed() {
+  private function jfw_cache_jobvite_feed($notify = true) {
     $jobvite_feed = get_option($this->prefix . 'job_feed');
     $now = new DateTime;
     $timeout_datetime = $this->jfw_get_api_timeout($now);
     $api_options = get_option($this->prefix . 'api_keys');
+    $notify_message = 'warning';
 
     if($api_options['api_type'] == 'staging' ||
       empty($jobvite_feed) ||
@@ -349,13 +350,15 @@ class JobviteAdmin extends JobviteSetup {
           $jobvite_feed->get_departments($job_feed)
         );
 
-        $this->jfw_redirect_with('success');
+        $notify_message = 'success';
       } else {
-        $this->jfw_redirect_with('error');
+        $notify_message = 'error';
       }
     }
 
-    $this->jfw_redirect_with('warning');
+    if(!empty($notify)) {
+      $this->jfw_redirect_with($notify_message);
+    }
   }
 
   private function jfw_admin_notice_warning() {

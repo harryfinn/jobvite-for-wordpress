@@ -54,9 +54,19 @@ class JobviteSetup {
   }
 
   public function init() {
+    add_action(
+      $this->prefix . 'cron_hook',
+      [$this, $this->prefix . 'fetch_jobvite_feed_cron']
+    );
+
     register_activation_hook(
       __FILE__,
       [$this, $this->prefix . 'activate_plugin']
+    );
+
+    register_deactivation_hook(
+      __FILE__,
+      [$this, $this->prefix . 'deactivate_plugin']
     );
 
     new JobviteAdmin();
@@ -64,6 +74,23 @@ class JobviteSetup {
 
   public function jfw_activate_plugin() {
     update_option($this->prefix . 'version', '0.1.0');
+
+    wp_schedule_event(
+      time(),
+      'hourly',
+      $this->prefix . 'cron_hook'
+    );
+  }
+
+  public function jfw_deactivate_plugin() {
+    wp_clear_scheduled_hook(
+      $this->prefix . 'cron_hook'
+    );
+  }
+
+  public function jfw_fetch_jobvite_feed_cron() {
+    update_option('jfw_cron_trigger_test', 'false');
+    // JobviteAdmin::jfw_cache_jobvite_feed(false);
   }
 }
 
