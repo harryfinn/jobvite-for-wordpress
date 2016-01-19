@@ -35,14 +35,14 @@ class JobviteFeed extends JobviteSetup {
       }
     );
 
+    if(empty($related_jobs)) return [];
+
     $num_of_related_jobs = count($related_jobs);
     $num_of_related_jobs_randomise = $num_of_related_jobs >= 2 ?
       2 :
       $num_of_related_jobs;
 
-    if(empty($related_jobs)) return [];
-
-    return [array_rand($related_jobs, $num_of_related_jobs)];
+    return [array_rand($related_jobs, $num_of_related_jobs_randomise)];
   }
 
   public function jfw_jobs_index_url() {
