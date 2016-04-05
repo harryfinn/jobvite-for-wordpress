@@ -42,7 +42,9 @@ class JobviteFeed extends JobviteSetup {
       2 :
       $num_of_related_jobs;
 
-    return array_rand($related_jobs, $num_of_related_jobs_randomise);
+    $random_jobs = array_rand($related_jobs, $num_of_related_jobs_randomise);
+
+    return (array)$random_jobs;
   }
 
   public function jfw_jobs_index_url() {
