@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: Jobvite for Wordpress
-Plugin URI:  http://1minus1.com
+Plugin URI:  https://github.com/harryfinn/jobvite-for-wordpress
 Description: A WP plugin to pull in a JSON feed of job listings from Jobvite
-Version:     0.1.0
+Version:     1.0.0
 Author:      harryfinn
-Author URI:  http://1minus1.com
+Author URI:  https://github.com/harryfinn
 License:     GPL2
 
 Jobvite for Wordpress is free software: you can redistribute it and/or modify
@@ -34,14 +34,6 @@ class JobviteSetup {
     $this->title = ucwords(str_replace('_', ' ', $this->name));
     $this->slug = str_replace('_', '-', $this->name);
 
-    register_activation_hook(
-      __FILE__,
-      [$this, $this->prefix . 'activate_plugin']
-    );
-
-    add_action('admin_menu', [$this, $this->prefix . 'add_admin_page']);
-    add_action('admin_init', [$this, $this->prefix . 'add_custom_settings']);
-
     spl_autoload_register([$this, $this->prefix . 'autoload_classes']);
 
     if(function_exists('__autoload')) {
@@ -50,37 +42,30 @@ class JobviteSetup {
   }
 
   public function jfw_autoload_classes($name) {
-    $class_path = plugin_dir_path( __FILE__ ) . 'admin/class.' . strtolower($name) . '.php';
+    $admin_path = plugin_dir_path(__FILE__) . 'admin/class.' . strtolower($name) . '.php';
 
-    if(file_exists($class_path)) {
-      require_once $class_path;
-    }
+    if(file_exists($admin_path))
+      require_once $admin_path;
+
+    $frontend_path = plugin_dir_path(__FILE__) . 'frontend/class.' . strtolower($name) . '.php';
+
+    if(file_exists($frontend_path))
+      require_once $frontend_path;
+  }
+
+  public function init() {
+    register_activation_hook(
+      __FILE__,
+      [$this, $this->prefix . 'activate_plugin']
+    );
+
+    new JobviteAdmin();
   }
 
   public function jfw_activate_plugin() {
     update_option($this->prefix . 'version', '0.1.0');
   }
-
-  public function jfw_add_admin_page() {
-    add_options_page(
-      $this->title,
-      $this->title,
-      'manage_options',
-      $this->slug,
-      [$this, $this->prefix . 'settings_page']
-    );
-  }
-
-  public function jfw_settings_page() {
-    JobviteAdmin::jfw_render_settings_page();
-  }
-
-  public function jfw_add_custom_settings() {
-    register_setting(
-      $this->slug,
-      $this->prefix . 'api_keys'
-    );
-  }
 }
 
-new JobviteSetup();
+$jobvite_plugin = new JobviteSetup();
+$jobvite_plugin->init();
