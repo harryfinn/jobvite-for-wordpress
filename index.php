@@ -1,11 +1,11 @@
 <?php
 /*
 Plugin Name: Jobvite for Wordpress
-Plugin URI:  http://1minus1.com
+Plugin URI:  https://github.com/harryfinn/jobvite-for-wordpress
 Description: A WP plugin to pull in a JSON feed of job listings from Jobvite
-Version:     0.1.0
+Version:     1.0.0
 Author:      harryfinn
-Author URI:  http://1minus1.com
+Author URI:  https://github.com/harryfinn
 License:     GPL2
 
 Jobvite for Wordpress is free software: you can redistribute it and/or modify
